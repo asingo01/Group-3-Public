@@ -27,6 +27,8 @@ def github_auth(url, lsttoken, ct):
 def countfiles(dictfiles, lsttokens, repo):
     ipage = 1  # url page counter
     ct = 0  # token counter
+    touch_counter = {}
+
 
     try:
         # loop though all the commit pages until the last returned empty page
@@ -41,13 +43,29 @@ def countfiles(dictfiles, lsttokens, repo):
             # iterate through the list of commits in  spage
             for shaObject in jsonCommits:
                 sha = shaObject['sha']
+                author = shaObject['commit']['author']['name']
+                date = shaObject['commit']['author']['date']
                 # For each commit, use the GitHub commit API to extract the files touched by the commit
                 shaUrl = 'https://api.github.com/repos/' + repo + '/commits/' + sha
                 shaDetails, ct = github_auth(shaUrl, lsttokens, ct)
                 filesjson = shaDetails['files']
                 for filenameObj in filesjson:
                     filename = filenameObj['filename']
-                    dictfiles[filename] = dictfiles.get(filename, 0) + 1
+                    # only track source files
+                    allowed_extensions = ['.java', '.js', '.ts', '.tsx', '.kt']
+                    if not filename.endswith(tuple(allowed_extensions)):
+                        continue
+                    if filename not in dictfiles:
+                        dictfiles[filename] = []
+
+                    if filename not in touch_counter:
+                        touch_counter[filename] = {}
+                    
+                    if author not in touch_counter[filename]:
+                        touch_counter[filename][author] = 0
+                    touch_counter[filename][author] += 1
+
+                    dictfiles[filename].append({'author': author, 'date': date, 'count': touch_counter[filename][author]})
                     print(filename)
             ipage += 1
     except:
@@ -64,7 +82,7 @@ repo = 'scottyab/rootbeer'
 # Remember to empty the list when going to commit to GitHub.
 # Otherwise they will all be reverted and you will have to re-create them
 # I would advise to create more than one token for repos with heavy commits
-lstTokens = ["Secret"]
+lstTokens = ["secret"]
 
 dictfiles = dict()
 countfiles(dictfiles, lstTokens, repo)
@@ -72,19 +90,15 @@ print('Total number of files: ' + str(len(dictfiles)))
 
 file = repo.split('/')[1]
 # change this to the path of your file
-fileOutput = 'data/file_' + file + '.csv'
-rows = ["Filename", "Touches"]
+fileOutput = 'data/authorsFile_' + file + '.csv'
+rows = ["Filename", "Author", "Date", "Touch Count"]
 fileCSV = open(fileOutput, 'w')
 writer = csv.writer(fileCSV)
 writer.writerow(rows)
 
-bigcount = None
-bigfilename = None
-for filename, count in dictfiles.items():
-    rows = [filename, count]
-    writer.writerow(rows)
-    if bigcount is None or count > bigcount:
-        bigcount = count
-        bigfilename = filename
+for filename, touches in dictfiles.items():
+    for touch in touches:
+        rows = [filename, touch['author'], touch['date'], touch['count']]
+        writer.writerow(rows)
 fileCSV.close()
-print('The file ' + bigfilename + ' has been touched ' + str(bigcount) + ' times.')
+print('Data saved to ' + fileOutput)
