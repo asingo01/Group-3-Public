@@ -38,7 +38,7 @@ def week_index(dt):
 files = sorted(list(set(t[0] for t in touches)))
 file_to_y = {files[i]: i for i in range(len(files))}
 
-# Map authors to colors using a simple cycling colormap
+# Map authors to colors
 authors = sorted(list(set(t[1] for t in touches)))
 cmap = plt.get_cmap("tab20")
 author_to_color = {authors[i]: cmap(i % 20) for i in range(len(authors))}
@@ -48,21 +48,20 @@ xs = []
 ys = []
 cs = []
 for (filename, author, dt) in touches:
-    xs.append(week_index(dt))
-    ys.append(file_to_y[filename])
+    xs.append(file_to_y[filename])
+    ys.append(week_index(dt))
     cs.append(author_to_color[author])
 
 plt.figure(figsize=(14, max(6, len(files) * 0.18)))
 plt.scatter(xs, ys, c=cs, s=18, alpha=0.8)
 
-plt.xlabel("Weeks since first touch")
-plt.ylabel("Files")
+plt.xlabel("Files")
+plt.ylabel("Weeks")
 plt.title("File touches over time (colored by author)")
 
-plt.yticks(range(len(files)), files, fontsize=7)
 plt.grid(True, linestyle="--", alpha=0.4)
 
-# Manual legend (simple)
+# Legend
 handles = []
 labels = []
 for a in authors:
