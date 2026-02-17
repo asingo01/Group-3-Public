@@ -36,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-html
-          path: ci_lab/htmlcov_broke
+          path: ci_lab/htmlcov
 
       - name: Install Flake8
         run: pip install flake8
